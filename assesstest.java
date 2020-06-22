@@ -379,3 +379,352 @@ public class UserDetails {
         driver.close();
 		}	
 	}
+
+
+----CC4--
+	Objectives :
+To understand the concept behind TestNG and working with data providers.
+URL : http://webapps.tekstac.com/Agent_Registration/
+Test Procedure:
+    Use the template code.
+   Only in the suggested section add the code to,
+   In class Ex6TestNG
+  1) Method 'createDriver'
+       create the driver using class DriverSetup Assign it to static variable 'driver'.
+  2) Method, 'agentRegistration'
+    This method should parse data from Agent.xlsx.
+    Annotate this method with  data provider name as "Agent".  Store the parsed data in a 2-D array variable,    'excelData' and return it.
+  3) Method 'testAgent' 
+      Annotate this method with data provider name as "Agent". Locate the form web elements. Send the excel data as value. Submit the form.
+    4) Use the below methods to assert their respective values located on the "Registered Successfully" page   against the excel data,
+testName
+testUserName
+testPhone
+testEmail  
+In case of assert failure, add the custom failure message mentioned in the code snippet.
+     5) Method 'checkAgent'   => Invoke the TestNG ONLY using this method
+Excel Sheet Name : agent
+
+
+------testing.xml----------
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Suite" >
+  <test name="Test">
+    <classes>
+       <!--  Add Required Code -->
+       <class name="Ex6TestNG">
+         </class>
+     </classes>
+  </test> <!-- Test -->
+</suite> <!-- Suite -->
+
+-------driversetup.java------------
+/* IMPORTANT:- DriverSetup --getWebDriver()
+-------------------------------------------------
+PLEASE DO NOT MAKE ANY CHANGES OR MOFICATIONS IN THIS PROGRAM */
+
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.By;
+
+import org.openqa.selenium.firefox.FirefoxBinary;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.firefox.FirefoxProfile;
+import org.openqa.selenium.firefox.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Parameters;
+public class DriverSetup
+{ 
+    private static WebDriver driver;
+    public static WebDriver getWebDriver()
+	{
+		System.setProperty("webdriver.gecko.driver", "/usr/bin/geckodriver");
+		FirefoxBinary firefoxBinary = new FirefoxBinary();
+		firefoxBinary.addCommandLineOptions("--headless");
+	    FirefoxProfile profile=new FirefoxProfile();
+	    //profile.setPreference("marionette.logging", "TRACE");
+		FirefoxOptions firefoxOptions = new FirefoxOptions();
+		firefoxOptions.setBinary(firefoxBinary);
+		firefoxOptions.setProfile(profile);
+	    driver=new FirefoxDriver(firefoxOptions);
+	    String baseUrl = "http://webapps.tekstac.com/Agent_Registration/";
+	    driver.get(baseUrl);
+	    return driver;
+	}
+}
+
+---------Ex6TestNG.java----------
+import static org.junit.Assert.assertEquals;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.support.ui.Select;
+import org.testng.TestNG;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Listeners;
+import org.testng.annotations.Test;
+import org.testng.collections.Lists;
+import junit.framework.Assert;
+
+@Listeners(FeatureTest.class)            //DO NOT remove or alter this line. REQUIRED FOR TESTING
+public class Ex6TestNG                //DO NOT Change the class Name
+{ 
+	public static WebDriver driver;
+	static String[][] excelData = null;  
+	public static String filePath;
+    public void createDriver(){  //DO NOT change the method signature
+	    //Create driver and assign it to 'static' driver variable
+	     driver=DriverSetup.getWebDriver();
+	}
+	
+	@DataProvider(name = "Agent")
+	public Object[][] agentRegistration() throws java.io.IOException {   //DO NOT change the method signature
+		//Parse data from Agent.xlsx, store in excelData variable and return the 2-dimensional array
+		//Parse data from Agent.xlsx, store in excelData variable and return the 2-dimensional array
+		File file1 = new File("Agent.xlsx");
+		filePath = file1.getAbsolutePath();
+    	System.out.println(filePath);
+    	FileInputStream fis = new FileInputStream(filePath);
+		XSSFWorkbook workbook = new XSSFWorkbook(fis);
+		System.out.println("fpath " + filePath);
+		int sheetcount = workbook.getNumberOfSheets();
+		System.out.println("sheetcount " + sheetcount);
+		XSSFSheet testSheet = workbook.getSheetAt(0);
+		int numRows = testSheet.getLastRowNum() + 1;
+		int numCols = testSheet.getRow(0).getLastCellNum();
+		System.out.println(numRows);
+		System.out.println(numCols);
+		excelData = new String[numRows][numCols];
+		System.out.println("Populating Array");
+		for (int k = 0; k < numRows; k++) {
+			XSSFRow row = testSheet.getRow(k);
+			for (int j = 0; j < numCols; j++) {
+				XSSFCell cell = row.getCell(j);
+				//excelData[k][j] = cell.toString();
+				excelData[k][j]=(j==4)?
+                row.getCell(j).getRawValue():
+                row.getCell(j).toString();
+          		System.out.println(excelData[k][j]);
+			}
+		}
+		return excelData;   
+	}
+	
+	@Test(dataProvider="Agent",priority=0)
+	void testAgent (String Fname,String Lname,String Uname,String pwd, String phone, String email){ //DO NOT change the method signature
+		//Annotate this method with data provider name as "Agent". Add 'priority=0'
+		//Fill the form using data parsed from excel and submit
+		driver.findElement(By.xpath("//input[@name='firstname']")).sendKeys(Fname);
+		driver.findElement(By.xpath("//input[@name='lastname']")).sendKeys(Lname);
+		driver.findElement(By.xpath("//input[@name='username']")).sendKeys(Uname);
+		driver.findElement(By.xpath("//input[@name='password']")).sendKeys(pwd);
+		driver.findElement(By.xpath("//input[@name='phonenumber']")).sendKeys(phone);
+		driver.findElement(By.xpath("//input[@name='email']")).sendKeys(email);
+		driver.findElement(By.id("submit")).click();
+	}
+	
+	@Test(testName="testName",priority=1)
+	void testName (){   //DO NOT change the method signature
+	    // Locate the first name in "Registered Successfully page". Assert it against the excel data.Set 'Name doesnt match 'custom failure message in assert 
+	    String eName1 =  driver.findElement(By.xpath("/html/body/table/tbody/tr[1]/td[2]")).getText();
+		String[] eName = eName1.split(" ");
+		Assert.assertEquals("Name doesnt match",excelData[0][0], eName[0]);
+    }
+	
+	@Test(testName="testUserName",priority=2)
+	void testUserName (){   //DO NOT change the method signature
+		// Locate the user name in "Registered Successfully page". Assert it against the excel data.Set 'Username doesnt match 'custom failure message in assert
+		String eUserName =  driver.findElement(By.xpath("/html/body/table/tbody/tr[2]/td[2]")).getText();
+		Assert.assertEquals("Username doesnt match",excelData[0][2], eUserName);
+	}
+	@Test(testName="testPhone",priority=3)
+	void testPhone(){  //DO NOT change the method signature
+		// Locate the phone in "Registered Successfully page". Assert it against the excel data.Set 'Phone doesnt match 'custom failure message in assert
+		String ePhone =  driver.findElement(By.xpath("/html/body/table/tbody/tr[3]/td[2]")).getText();
+		Assert.assertEquals("Phone doesnt match",excelData[0][4], ePhone);
+	}
+	@Test(testName="testEmail",priority=5)
+	void testEmail(){   //DO NOT change the method signature
+        // Locate the email in "Registered Successfully page". Assert it against the excel data.Set 'Email doesnt match 'custom failure message in assert
+        String eMail1 =  driver.findElement(By.xpath("/html/body/table/tbody/tr[4]/td[2]")).getText();
+        Assert.assertEquals("Email doesnt match",excelData[0][5], eMail1);
+	}
+	
+	public void checkAgent() {            //DO NOT change the method signature
+	    //Invoke the test using TestNG ONLY HERE.
+	    TestNG testSuite = new TestNG();
+		testSuite.setTestClasses(new Class[] { Ex6TestNG.class });
+		testSuite.run();
+	}
+	
+	public static void main(String[] args) throws Exception  {
+	    Ex6TestNG ex5=new Ex6TestNG();
+	    //Add required code here
+	    ex5.createDriver();
+	    ex5.agentRegistration();
+		//ex5.checkAgent();
+	}	
+}
+
+
+
+-----CC3----
+CargoShipping
+================================================================================
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.*;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.Assert;
+import org.openqa.selenium.By;
+import org.apache.poi.ss.usermodel.*;
+public class CargoShipping {
+                // Location of the excel file
+                public static String filePath = null;
+                static XSSFWorkbook wb;
+                static XSSFSheet sheet;
+                static XSSFRow rowvalue;
+                static XSSFCell cellvalue;
+                static FileOutputStream fos;
+                static FileInputStream excelFile;
+                static Object[][] str;
+                public static String getExcelPath(String firstSheetName) throws IOException {
+                                // get the file path of the excel sheet
+                                filePath = System.getProperty("user.dir")+"/cargo.xlsx";
+                                File file = new File(filePath);
+                                FileInputStream excelFile = new FileInputStream(file);
+                                wb = new XSSFWorkbook(excelFile);
+                                if(wb.getSheet(firstSheetName)==null)
+                                {
+                                                sheet = wb.createSheet(firstSheetName);
+                                }
+                                /*for (int i = 0; i < wb.getNumberOfSheets(); i++) {
+                                            System.out.println("Sheet name: " + wb.getSheetName(i));
+                                                if((wb.getSheetName(i)).equalsIgnoreCase(firstSheetName))
+                                                {
+                                                                wb.removeSheetAt(i);
+                                                }
+                               }*/
+                                return filePath;
+                }
+                public static Object[][] readExcelData(String firstSheetName) throws Exception {
+                            // read the data from excel sheet and store it in 2-D array. Return the array
+                                sheet = wb.getSheet(firstSheetName);
+                                int numRows = sheet.getLastRowNum() + 1;
+                                int numCols = sheet.getRow(0).getLastCellNum();
+                                str = new Object[numRows][numCols];
+                                for (int i = 0; i < numRows; i++) {
+                                                rowvalue = sheet.getRow(i);
+                                                for (int j = 0; j < numCols; j++) {
+                                                                cellvalue = rowvalue.getCell(j);
+                                                                DataFormatter fmt = new DataFormatter();
+                                                                String value = fmt.formatCellValue(cellvalue);
+                                                                str[i][j] = value;
+//                                                            System.out.println(str[i][j]);
+                                                }
+                                }
+                                return str;
+                }
+                public static void writeExcelData(String firstSheetName, String displayMsg,String testCaseResult,int row) throws Exception
+                {
+                                //Write the display message and test result in the new sheet 'customervalid1'
+                                sheet = wb.getSheet(firstSheetName);
+                                int firstColumn = 0;
+                                if(displayMsg.equalsIgnoreCase("Dear Customer, your total shipping cost is $200"))
+                                {
+                                                rowvalue = sheet.createRow(row);
+                                                cellvalue = rowvalue.createCell(firstColumn);
+                                                cellvalue.setCellValue(displayMsg);
+                                                cellvalue = rowvalue.createCell(++firstColumn);
+                                                cellvalue.setCellValue(testCaseResult);
+                                }
+                               else if(displayMsg.equalsIgnoreCase("Dear Customer, your total shipping cost is $50"))
+                                {
+                                               rowvalue = sheet.createRow(row);
+                                                cellvalue = rowvalue.createCell(firstColumn);
+                                                cellvalue.setCellValue(displayMsg);
+                                                cellvalue = rowvalue.createCell(++firstColumn);
+                                                cellvalue.setCellValue(testCaseResult);
+                                }
+                                fos = new FileOutputStream(filePath);
+                                wb.write(fos);
+               }
+}
+
+================================================================================
+SeleniumTestForm
+================================================================================
+import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
+import org.junit.*;
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
+import org.openqa.selenium.*;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.support.ui.Select;
+public class SeleniumTestForm {     //DO NOT change the class name
+    public static WebDriver driver;
+    public static String result1;       //Store the message displayed on the page after submit
+    public static String result2;
+   public void createDriver() {
+                //Create driver and store in in static variable 'driver'
+                WebDriver driver = DriverSetup.getWebDriver();
+    }
+    public void testSeleniumTestForm(String weight, String transportMode) throws Exception {
+                                // Pass the weight and transpot mode read from excel sheet to this method.
+                                // Send these data to form and submit.
+                                // Retrieve the message displayed on page after submit. Store it in variable
+                                // 'result1'
+                                // Assert the message retrieved with expected.
+                                // Write the data, message retrieved and "Test Passed" or "Test Failed" to a new
+                                // sheet 'customervalid1'
+                                driver.findElement(By.id("weight")).clear();
+                                driver.findElement(By.id("weight")).sendKeys(weight);
+                                driver.findElement(By.id(transportMode)).click();
+                                driver.findElement(By.id("calculate")).click();
+                                result1 = driver.findElement(By.id("result")).getText();
+                                String expectedText1 = "Dear Customer, your total shipping cost is $200";
+                                String expectedText2 = "Dear Customer, your total shipping cost is $50";
+                                if (result1.equalsIgnoreCase(expectedText1) || result1.equalsIgnoreCase(expectedText2)) {
+                                                result2 = "true";
+                                } else {
+                                                result2 = "false";
+                               }
+                                if(transportMode.equalsIgnoreCase("air"))
+                                {
+                                                CargoShipping.writeExcelData("customervalid1", result1, result2, 0);
+                               }
+                                else
+                                {
+                                                CargoShipping.writeExcelData("customervalid1", result1, result2, 1);
+                                }
+                }
+                public static void main(String[] args) throws Exception {
+                                SeleniumTestForm st = new SeleniumTestForm();
+                                // Add code here
+                                st.createDriver();
+                                CargoShipping.getExcelPath("customervalid1");
+                                st.testSeleniumTestForm("200", "air");
+                                st.testSeleniumTestForm("100", "road");
+                               CargoShipping.readExcelData("customervalid1");
+                }
+}
